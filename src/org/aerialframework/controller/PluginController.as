@@ -5,22 +5,30 @@ package org.aerialframework.controller
 
 	import flash.filesystem.File;
 	import flash.system.ApplicationDomain;
+	import flash.system.System;
+	import flash.utils.getTimer;
 
 	import mx.utils.ObjectUtil;
 
 	import org.aerialframework.abstract.AbstractPlugin;
 	import org.as3commons.lang.ClassUtils;
+
 	import org.osflash.eval.ActionScriptEvaluator;
 	import org.osflash.eval.getDefinition;
 
 	public class PluginController
 	{
 		private static var _instance:PluginController;
-		
-		private var evaluator:ActionScriptEvaluator;
-		
+
 		public var schema:Schema;
 		public var relations:XML;
+
+		private var domains:Object = {};
+		private var plugins:Array = [];
+		private var evalIndex:int = 0;
+		private var currentClassName:String;
+		private var currentPackage:String;
+		private var startTime:int;
 
 		{
 			_instance = new PluginController();
@@ -28,23 +36,39 @@ package org.aerialframework.controller
 
 		public function PluginController()
 		{
-			evaluator = new ActionScriptEvaluator();
-			evaluator.onSuccess.add(handleSuccess);
-			evaluator.onFailure.add(handleFailure);
 		}
 
 		private function handleSuccess():void
 		{
-			const definition = getDefinition("YAML");
+			var descriptor:Object = this.domains.hasOwnProperty(currentPackage)
+											?	this.domains[currentPackage]
+											:	null;
 
+			var domain:ApplicationDomain = descriptor.domain;
+			if(!domain)
+				domain = new ApplicationDomain(ApplicationDomain.currentDomain);
+			else
+			{
+				trace(">found domain for " + currentPackage);
+			}
+			
+			const definition = getDefinition(currentClassName, domain);
+			trace(">>> " + currentClassName + definition + "\nPackage: " + currentPackage);
 			var model:AbstractPlugin = ClassUtils.newInstance(definition);
-			model.schema = schema;
-			model.relationships = relations;
+			trace(currentClassName + " > > " + model.fileType);
+			
+			nextEval();
 
-			model.initialize();
+			/*trace(ObjectUtil.toString(domains));
 
-			var models:Array = model.generate();
-			trace(models.length);
+			 var model:AbstractPlugin = ClassUtils.newInstance(definition);
+			 model.schema = schema;
+			 model.relationships = relations;
+
+			 model.initialize();
+
+			 var models:Array = model.generate();
+			 trace(models.length);*/
 		}
 
 		private function handleFailure(e:*):void
@@ -57,36 +81,70 @@ package org.aerialframework.controller
 			return _instance;
 		}
 
-		public function registerPlugins():Array
+		public function registerPlugins():void
 		{
+			startTime = getTimer();
+			
 			var pluginDir:File = File.applicationDirectory.resolvePath("plugins/src");
 			if(!pluginDir.exists)
 				throw new Error("No plugins present");
 
 			var list:Array = scanDirectory(pluginDir);
-			var plugins:Array = [];
 
 			for each(var file:File in list)
 			{
 				if(!file)
 					continue;
-				
-				if(file.url.indexOf("yaml/doctrine1/YAML.as") < 0)
-					continue;
+
+				var relativePath:String = pluginDir.getRelativePath(file, true).substr(0, -file.name.length - 1);
+				var packageStr:String = relativePath.replace(/[\/\\]/g, ".");
+				if(!domains)
+					domains = {};
+
+				if(!domains.hasOwnProperty(packageStr))
+				{
+					var domain:ApplicationDomain = new ApplicationDomain(ApplicationDomain.currentDomain);
+					var evaluator:ActionScriptEvaluator = new ActionScriptEvaluator(domain);
+
+					domains[packageStr] = {domain:domain, classes:[], eval:evaluator};
+					evaluator.onSuccess.add(handleSuccess);
+					evaluator.onFailure.add(handleFailure);
+				}
+
+				domains[packageStr].classes.push(file.name.substr(0, -3));
 
 				var contents:String = FileIOController.read(file);
 				if(contents.indexOf("extends AbstractPlugin") < 0)
 					continue;
 
 				contents = convertImportsToNamespaces(contents);
-				
-				plugins.push({file:file, data:contents});
-				register(file, contents);
-				break;
+				trace(contents);
+
+				this.plugins.push({file:file, data:contents, "package":packageStr});
 			}
 
-			return plugins;
+			evalIndex = 0;
+			nextEval();
 		}
+
+		private function nextEval():void
+		{
+			var plugin:Object = this.plugins[evalIndex];
+			evalIndex++;
+
+			if(!plugin)
+			{
+				trace(">>> complete in " + (getTimer() - startTime));
+				return;
+			}
+
+			currentClassName = plugin.file.name.substr(0, -3);
+			currentPackage = plugin["package"];
+
+			register(plugin.file, plugin.data);
+		}
+
+		// use `domains` fqdn and application domain to get definition
 
 		private function getFQDN(filename:String, contents:String):String
 		{
@@ -107,8 +165,12 @@ package org.aerialframework.controller
 
 		private function register(file:File, contents:String):void
 		{
+			var descriptor:Object = this.domains.hasOwnProperty(currentPackage)
+														?	this.domains[currentPackage]
+														:	null;
+
 			trace(">>> loading: " + file.nativePath);
-			evaluator.load(contents);
+			descriptor.eval.load(contents);
 		}
 
 		private function convertImportsToNamespaces(classFile:String):String

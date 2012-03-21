@@ -83,7 +83,7 @@
             
             PluginController.instance.schema = schema;
             PluginController.instance.relations = relations;
-            var plugins:Array = PluginController.instance.registerPlugins();
+            PluginController.instance.registerPlugins();
 //
 //            var m:Model = new Model(schema, {'tables':['Address']}, relations);
 //            trace(ObjectUtil.toString(m.generate()));
