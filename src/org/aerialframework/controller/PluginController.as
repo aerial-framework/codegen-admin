@@ -15,6 +15,7 @@ package org.aerialframework.controller
 
 	import org.osflash.eval.ActionScriptEvaluator;
 	import org.osflash.eval.getDefinition;
+	import org.osflash.signals.Signal;
 
 	public class PluginController
 	{
@@ -28,7 +29,9 @@ package org.aerialframework.controller
 		private var evalIndex:int = 0;
 		private var currentClassName:String;
 		private var currentPackage:String;
-		private var startTime:int;
+
+		private var _loadedPlugins:Array = [];
+		public var pluginsLoaded:Signal;
 
 		{
 			_instance = new PluginController();
@@ -36,39 +39,37 @@ package org.aerialframework.controller
 
 		public function PluginController()
 		{
+			pluginsLoaded = new Signal(Array);
 		}
 
 		private function handleSuccess():void
 		{
-			var descriptor:Object = this.domains.hasOwnProperty(currentPackage)
-											?	this.domains[currentPackage]
-											:	null;
-
-			var domain:ApplicationDomain = descriptor.domain;
-			if(!domain)
-				domain = new ApplicationDomain(ApplicationDomain.currentDomain);
-			else
+			try
 			{
-				trace(">found domain for " + currentPackage);
+				var descriptor:Object = this.domains.hasOwnProperty(currentPackage)
+												?	this.domains[currentPackage]
+												:	null;
+	
+				var domain:ApplicationDomain = descriptor.domain;
+				if(!domain)
+					domain = new ApplicationDomain(ApplicationDomain.currentDomain);
+				
+				const definition = getDefinition(currentClassName, domain);
+				if(!definition)
+					return;
+				
+				var model:AbstractPlugin = ClassUtils.newInstance(definition);
+				model.schema = this.schema;
+				model.relationships = this.relations;
+				
+				_loadedPlugins.push({plugin:model, "package":currentPackage, domain:domain});
+			}
+			catch(e:Error)
+			{
+				trace(ObjectUtil.toString(e));
 			}
 			
-			const definition = getDefinition(currentClassName, domain);
-			trace(">>> " + currentClassName + definition + "\nPackage: " + currentPackage);
-			var model:AbstractPlugin = ClassUtils.newInstance(definition);
-			trace(currentClassName + " > > " + model.fileType);
-			
 			nextEval();
-
-			/*trace(ObjectUtil.toString(domains));
-
-			 var model:AbstractPlugin = ClassUtils.newInstance(definition);
-			 model.schema = schema;
-			 model.relationships = relations;
-
-			 model.initialize();
-
-			 var models:Array = model.generate();
-			 trace(models.length);*/
 		}
 
 		private function handleFailure(e:*):void
@@ -83,8 +84,9 @@ package org.aerialframework.controller
 
 		public function registerPlugins():void
 		{
-			startTime = getTimer();
-			
+			_loadedPlugins = [];
+			evalIndex = 0;
+
 			var pluginDir:File = File.applicationDirectory.resolvePath("plugins/src");
 			if(!pluginDir.exists)
 				throw new Error("No plugins present");
@@ -118,12 +120,10 @@ package org.aerialframework.controller
 					continue;
 
 				contents = convertImportsToNamespaces(contents);
-				trace(contents);
 
 				this.plugins.push({file:file, data:contents, "package":packageStr});
 			}
 
-			evalIndex = 0;
 			nextEval();
 		}
 
@@ -134,7 +134,7 @@ package org.aerialframework.controller
 
 			if(!plugin)
 			{
-				trace(">>> complete in " + (getTimer() - startTime));
+				completeEval();
 				return;
 			}
 
@@ -142,6 +142,11 @@ package org.aerialframework.controller
 			currentPackage = plugin["package"];
 
 			register(plugin.file, plugin.data);
+		}
+
+		private function completeEval():void
+		{
+			this.pluginsLoaded.dispatch(this._loadedPlugins);
 		}
 
 		// use `domains` fqdn and application domain to get definition
@@ -169,7 +174,6 @@ package org.aerialframework.controller
 														?	this.domains[currentPackage]
 														:	null;
 
-			trace(">>> loading: " + file.nativePath);
 			descriptor.eval.load(contents);
 		}
 
@@ -241,6 +245,11 @@ package org.aerialframework.controller
 			}
 
 			return files;
+		}
+
+		public function get loadedPlugins():Array
+		{
+			return _loadedPlugins;
 		}
 	}
 }

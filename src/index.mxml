@@ -14,11 +14,9 @@
 
     <fx:Script>
 		<![CDATA[
-        import com.betabong.xml.e4x.E4X;
         import com.jacwright.nativemenu.Menus;
 
         import mx.core.ByteArrayAsset;
-        import mx.utils.ObjectUtil;
 
         import org.aerialframework.controller.ConfigController;
         import org.aerialframework.controller.FileIOController;
@@ -26,10 +24,7 @@
         import org.aerialframework.controller.PluginController;
         import org.aerialframework.controller.ProjectController;
         import org.aerialframework.error.ConfigError;
-        import org.aerialframework.flex.Model;
-
-        //        import org.aerialframework.flex.Model;
-        import org.osflash.eval.ActionScriptEvaluator;
+        import org.as3commons.lang.ClassUtils;
         import org.osflash.eval.getDefinition;
 
         include "dependencies.as";
@@ -80,13 +75,25 @@
                 return;
 
             cgv.schema = schema;
-            
+
             PluginController.instance.schema = schema;
             PluginController.instance.relations = relations;
             PluginController.instance.registerPlugins();
-//
-//            var m:Model = new Model(schema, {'tables':['Address']}, relations);
-//            trace(ObjectUtil.toString(m.generate()));
+            PluginController.instance.pluginsLoaded.add(pluginsLoadedHandler);
+        }
+
+        private function pluginsLoadedHandler(plugins:Array):void
+        {
+            if(!plugins)
+            {
+                trace("No plugins loaded");
+                return;
+            }
+
+            for each(var plugin:Object in plugins)
+            {
+                trace("Loaded " + ClassUtils.getName(ClassUtils.forInstance(plugin.plugin, plugin.domain)) + " from package: " + plugin["package"]);
+            }
         }
 
         private function processConfig(xml:XML):void
