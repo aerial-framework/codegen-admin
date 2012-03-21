@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+                       xmlns:s="library://ns.adobe.com/flex/spark"
+                       xmlns:mx="library://ns.adobe.com/flex/mx"
+                       xmlns:nativemenu="com.jacwright.nativemenu.*" xmlns:view="org.aerialframework.view.*"
+                       invoke="applicationInvokeHandler(event)"
+                       applicationComplete="init()">
+
+    <s:layout>
+        <s:VerticalLayout paddingBottom="20" paddingLeft="20" paddingRight="20" paddingTop="20"/>
+    </s:layout>
+
+    <view:CodeGenerationView id="cgv" width="100%" height="100%"/>
+
+    <fx:Script>
+		<![CDATA[
+        import com.betabong.xml.e4x.E4X;
+        import com.jacwright.nativemenu.Menus;
+
+        import mx.core.ByteArrayAsset;
+        import mx.utils.ObjectUtil;
+
+        import org.aerialframework.controller.ConfigController;
+        import org.aerialframework.controller.FileIOController;
+        import org.aerialframework.controller.MenuController;
+        import org.aerialframework.controller.PluginController;
+        import org.aerialframework.controller.ProjectController;
+        import org.aerialframework.error.ConfigError;
+        import org.aerialframework.flex.Model;
+
+        //        import org.aerialframework.flex.Model;
+        import org.osflash.eval.ActionScriptEvaluator;
+        import org.osflash.eval.getDefinition;
+
+        include "dependencies.as";
+
+        private var menuController:MenuController = MenuController.instance;
+        private var projectController:ProjectController = ProjectController.instance;
+
+        [Embed(source='test.mwb', mimeType='application/octet-stream')]
+        private var testMWB:Class;
+
+        /**
+         * Application is invoked by command line or desktop by selecting a .aerial file
+         * @param event
+         */
+        private function applicationInvokeHandler(event:InvokeEvent):void
+        {
+            if(event.arguments.length > 0)
+            {
+                var file:File;
+
+                if((event.currentDirectory != null) && (event.arguments.length > 0))
+                {
+                    var invocationDirectory:File = event.currentDirectory;
+                    file = invocationDirectory.resolvePath(event.arguments[0]);
+                }
+
+                if(file && file.exists && file.extension)
+                {
+                    var data:* = FileIOController.read(file);
+                    processConfig(data);
+                }
+            }
+        }
+
+        protected function init():void
+        {
+            Menus.initMainMenu(mainMenu, stage.nativeWindow);
+
+            var file:File = new File("/Applications/XAMPP/xamppfiles/htdocs/open-source/aerial/new/project.aerial");
+            var data:String = FileIOController.read(file, false, String);
+            processConfig(new XML(data));
+
+//            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/rsajobs/db/rsajobs.mwb");
+            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/zagweb/chateau/db/chateau.mwb");
+            var schema:Schema = ConfigController.instance.processMWB(mwb);
+
+            if(!schema)
+                return;
+
+            cgv.schema = schema;
+            
+            PluginController.instance.schema = schema;
+            PluginController.instance.relations = relations;
+            var plugins:Array = PluginController.instance.registerPlugins();
+//
+//            var m:Model = new Model(schema, {'tables':['Address']}, relations);
+//            trace(ObjectUtil.toString(m.generate()));
+        }
+
+        private function processConfig(xml:XML):void
+        {
+            try
+            {
+                ConfigController.instance.parseConfigFile(xml);
+                ConfigController.instance.basePath = File.desktopDirectory.resolvePath("admin-test");
+            }
+            catch (e:Error)
+            {
+                switch(e.message)
+                {
+                    case ConfigError.BLANK_CONFIG:
+                        trace("blank config");
+                        break;
+                    default:
+                        trace("Uncaught: " + e.message);
+                        break;
+                }
+            }
+        }
+
+        protected function testCodeGen():void
+        {
+            var doc:Document = new Document();
+            doc.loadByteArray(ByteArrayAsset(new testMWB()));
+            var schema:Schema = doc.schemas[0] as Schema;
+            //trace(schema.yaml);
+            //return;
+
+            const definition:Class = getDefinition("CodeGen");
+
+            var doctrine:* = new definition(schema);
+            doctrine.modelPackage = "com.test.vo";
+            doctrine.servicePackage = "com.test.services";
+            doctrine.generateModels(['User']);
+        }
+
+        private function loadContents():String
+        {
+            var contents:String;
+
+            const fileStream:FileStream = new FileStream();
+            try
+            {
+                const file:File = File.applicationDirectory.resolvePath('CodeGen.as.tmpl');
+                fileStream.open(file, FileMode.READ);
+                contents = fileStream.readMultiByte(file.size, File.systemCharset);
+            }
+            catch (error:Error)
+            {
+                contents = null;
+            }
+            finally
+            {
+                fileStream.close();
+            }
+
+            return contents;
+        }
+
+        private function handleSuccess():void
+        {
+//				const definition : Class = getDefinition('Bob');
+//
+//				new definition("Bob\nlikes\nto\nwalk");
+
+            testCodeGen();
+        }
+
+        private function handleFailure(e:*):void
+        {
+            trace(e);
+        }
+        ]]>
+	</fx:Script>
+
+    <fx:Declarations>
+        <fx:XML id="relations" source="relationships.xml"/>
+
+        <nativemenu:Menu id="mainMenu">
+            <nativemenu:MenuItem label="_File">
+                <nativemenu:MenuItem label="_New" shortcut="Cmd+N" select="menuController.createNewProject()"/>
+                <nativemenu:MenuItem label="_Open Project" shortcut="Cmd+O"
+                                     select="menuController.openExistingProject()"/>
+                <nativemenu:MenuItem id="recentMenuItem" label="_Open Recent"/>
+                <nativemenu:MenuSeparator/>
+                <nativemenu:MenuItem label="_Close" shortcut="Cmd+W" select="menuController.closeProject()" os="mac"/>
+                <nativemenu:MenuItem label="_Close" shortcut="Ctrl+W" select="menuController.closeProject()" os="win"/>
+                <nativemenu:MenuItem label="E_xit" shortcut="Cmd+Q" select="menuController.closeApplication()"
+                                     os="mac"/>
+                <nativemenu:MenuItem label="E_xit" shortcut="Alt+F4" select="menuController.closeApplication()"
+                                     os="win"/>
+            </nativemenu:MenuItem>
+        </nativemenu:Menu>
+    </fx:Declarations>
+
+</s:WindowedApplication>

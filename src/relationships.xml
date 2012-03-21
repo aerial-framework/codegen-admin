@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>
+
+    <mn joinTable="BillAddress">
+        <table fk="userId" alias="Dude">User</table>
+        <table fk="addressId" alias="billingAddress">Address</table>
+    </mn>
+    
+    <mn joinTable="ShipAddress">
+        <table fk="userId">User</table>
+        <table fk="addressId" alias="shippingAddress">Address</table>
+    </mn>
+
+    <self table="Company" joinTable="CompanyHierarchy">
+        <fk alias="parent">parentId</fk>
+        <fk alias="child">childId</fk>
+    </self>
+    
+</schema>

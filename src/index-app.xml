@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<application xmlns="http://ns.adobe.com/air/application/2.6">
+
+	<id>org.aerialframework.admin</id>
+	<filename>Aerial Admin</filename>
+	<name>Aerial Admin</name>
+	<versionNumber>1.0.6</versionNumber>
+	<versionLabel>1.0.6 alpha</versionLabel>
+	<description>A productivity utility provided by the Aerial Framework team</description>
+	<copyright>Aerial Framework Team</copyright>
+
+	<initialWindow>
+		<content>index.swf</content>
+		<title>Aerial Admin</title>
+        <visible>true</visible>
+        <minSize>1024 768</minSize>
+        <width>1024</width>
+        <height>768</height>
+	</initialWindow>
+
+	<installFolder>Aerial Framework</installFolder>
+
+	<programMenuFolder>Aerial Framework</programMenuFolder>
+
+	<icon>
+		<image16x16>assets/icons/app/appIcon_16.png</image16x16>
+		<image32x32>assets/icons/app/appIcon_32.png</image32x32>
+		<image48x48>assets/icons/app/appIcon_48.png</image48x48>
+		<image128x128>assets/icons/app/appIcon_128.png</image128x128>
+	</icon>
+
+	<supportedProfiles>extendedDesktop</supportedProfiles>
+
+	<fileTypes>
+		<fileType>
+
+			<name>aerialframework.project</name>
+
+			<extension>aerial</extension>
+
+			<description>Aerial Framework project configuration file</description>
+
+			<contentType>application/aerialframework.project</contentType>
+
+			<icon>
+				<image16x16>assets/icons/app/appIcon_16.png</image16x16>
+				<image32x32>assets/icons/app/appIcon_32.png</image32x32>
+				<image48x48>assets/icons/app/appIcon_48.png</image48x48>
+				<image128x128>assets/icons/app/appIcon_128.png</image128x128>
+			</icon>
+
+		</fileType>
+	</fileTypes>
+    
+</application>
