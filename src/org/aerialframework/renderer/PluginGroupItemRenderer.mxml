@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+                xmlns:s="library://ns.adobe.com/flex/spark"
+                xmlns:mx="library://ns.adobe.com/flex/mx"
+                autoDrawBackground="false" dataChange="dataChangeHandler(event)"
+                width="100%">
+
+    <s:layout>
+        <s:VerticalLayout gap="0"/>
+    </s:layout>
+
+    <s:BorderContainer width="100%" minHeight="1">
+        <s:layout>
+            <s:VerticalLayout paddingBottom="10" paddingLeft="10"
+                              paddingRight="10" paddingTop="10"/>
+        </s:layout>
+
+        <s:backgroundFill>
+            <s:SolidColor color="#EEEEEE"/>
+        </s:backgroundFill>
+
+        <s:borderStroke>
+            <s:Stroke color="#DDDDDD" weight="1" alpha="0.8"/>
+        </s:borderStroke>
+
+        <s:Label text="{data.type}" fontSize="12" fontWeight="bold"
+                 paddingTop="4"/>
+
+    </s:BorderContainer>
+
+    <s:List id="pluginList" width="100%" height="100%" borderVisible="false"
+            itemRenderer="org.aerialframework.renderer.PluginItemRenderer">
+        <s:layout>
+            <s:VerticalLayout gap="0" paddingRight="0"/>
+        </s:layout>
+    </s:List>
+
+    <fx:Script>
+        <![CDATA[
+        import mx.collections.ArrayList;
+        import mx.events.FlexEvent;
+
+        private function dataChangeHandler(event:FlexEvent):void
+        {
+            if(!data)
+            {
+                pluginList.dataProvider = new ArrayList();
+                return;
+            }
+
+            pluginList.dataProvider = new ArrayList(data.group);
+        }
+        
+        public function get pluginRenderers():Array
+        {
+            var elements:Array = [];
+            for(var i:int = 0; i < pluginList.dataGroup.numElements; i++)
+            {
+                var element:PluginItemRenderer = pluginList.dataGroup.getElementAt(i) as PluginItemRenderer;
+                elements.push(element);
+            }
+            
+            return elements;
+        }
+        ]]>
+    </fx:Script>
+</s:ItemRenderer>

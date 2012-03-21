@@ -62,7 +62,7 @@ package org.aerialframework.controller
 				model.schema = this.schema;
 				model.relationships = this.relations;
 				
-				_loadedPlugins.push({plugin:model, "package":currentPackage, domain:domain});
+				_loadedPlugins.push({instance:model, "package":currentPackage, domain:domain});
 			}
 			catch(e:Error)
 			{
