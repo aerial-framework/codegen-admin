@@ -5,19 +5,13 @@ package org.aerialframework.controller
 
 	import flash.filesystem.File;
 	import flash.system.ApplicationDomain;
-	import flash.utils.getDefinitionByName;
 
 	import mx.utils.ObjectUtil;
 
 	import org.aerialframework.abstract.AbstractPlugin;
-
 	import org.as3commons.lang.ClassUtils;
-
 	import org.osflash.eval.ActionScriptEvaluator;
 	import org.osflash.eval.getDefinition;
-
-	import org.aerialframework.abstract.AbstractPlugin; AbstractPlugin;
-	import com.betabong.xml.e4x.E4X;					E4X;
 
 	public class PluginController
 	{
@@ -41,17 +35,16 @@ package org.aerialframework.controller
 
 		private function handleSuccess():void
 		{
-			const definition = getDefinition("Bob");
-			
-//			new definition(schema, null, relations).generate();
-			
-			var bob:AbstractPlugin = ClassUtils.newInstance(definition);
-			bob.schema = schema;
-			bob.relationships = relations;
-			
-			bob.initialize();
-			
-			bob.generate();
+			const definition = getDefinition("YAML");
+
+			var model:AbstractPlugin = ClassUtils.newInstance(definition);
+			model.schema = schema;
+			model.relationships = relations;
+
+			model.initialize();
+
+			var models:Array = model.generate();
+			trace(models.length);
 		}
 
 		private function handleFailure(e:*):void
@@ -77,17 +70,15 @@ package org.aerialframework.controller
 			{
 				if(!file)
 					continue;
+				
+				if(file.url.indexOf("yaml/doctrine1/YAML.as") < 0)
+					continue;
 
 				var contents:String = FileIOController.read(file);
 				if(contents.indexOf("extends AbstractPlugin") < 0)
 					continue;
 
 				contents = convertImportsToNamespaces(contents);
-				
-				
-//				contents = FileIOController.read(File.desktopDirectory.resolvePath("test.as"));
-				
-				trace(contents + "\n" + StringUtils.repeat(50, "-"));
 				
 				plugins.push({file:file, data:contents});
 				register(file, contents);
@@ -99,7 +90,7 @@ package org.aerialframework.controller
 
 		private function getFQDN(filename:String, contents:String):String
 		{
-			var matchPackage:RegExp = /\bpackage\s?(.+)?(\s+)?\{/g;
+			var matchPackage:RegExp = /[^"']\bpackage\s?(.+)?(\s+)?\{/g;
 
 			var matches:Array = contents.match(matchPackage);
 			if(!matches || matches.length < 1)
@@ -159,10 +150,10 @@ package org.aerialframework.controller
 			classFile = classFile.replace(matchImportsRegex, "");
 
 			// replace super() with super$init() in accordance with Tamarin constraint
-			classFile = classFile.replace(/[^"]\bsuper\(/g, "super$init(");
+			classFile = classFile.replace(/[^"']\bsuper\(/g, "super$init(");
 
 			// remove package definition
-			classFile = classFile.replace(/[^"]\bpackage\s?(.+)?(\s+)?\{/g, "");
+			classFile = classFile.replace(/[^"']\bpackage\s?(.+)?(\s+)?\{/g, "");
 			classFile = classFile.substring(0, classFile.lastIndexOf("}"));
 
 			return classFile;
