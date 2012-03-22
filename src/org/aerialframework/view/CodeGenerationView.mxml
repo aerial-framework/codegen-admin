@@ -62,11 +62,14 @@
         import com.mysql.workbench.model.Table;
 
         import mx.collections.ArrayList;
+        import mx.core.UIComponent;
         import mx.events.FlexEvent;
+        import mx.utils.ObjectUtil;
         import mx.utils.OrderedObject;
 
         import org.aerialframework.abstract.AbstractPlugin;
         import org.aerialframework.abstract.GeneratedFile;
+        import org.aerialframework.abstract.OptionDescriptor;
         import org.aerialframework.controller.FileIOController;
         import org.aerialframework.controller.PluginController;
         import org.aerialframework.model.FieldDefinition;
@@ -183,8 +186,6 @@
                 model.tableName = table.name;
                 model.modelName = table.className;
 
-                trace(table.name);
-
                 for each(var column:Column in table.columns)
                 {
                     var field:FieldDefinition = new FieldDefinition();
@@ -243,6 +244,34 @@
                 {
                     if(!element.selected)
                         continue;
+                    
+                    if(element.optionFields)
+                    {
+                        var options:Object = {};
+                        for(var optionField:Object in element.optionFields)
+                        {
+                            if(!optionField || !optionField is OptionDescriptor)
+                                continue;
+
+                            var optionDescriptor:OptionDescriptor = optionField as OptionDescriptor;
+                            var field:UIComponent = element.optionFields[optionDescriptor];
+                            
+                            if(optionDescriptor.propertyCallback)
+                            {
+                                options[optionDescriptor.fieldName] = optionDescriptor.propertyCallback.apply(this, [field]);
+                            }
+                            else
+                            {
+                                options[optionDescriptor.fieldName] = field[optionDescriptor.property];
+                            }
+                        }
+                    }
+                    
+                    var plugin:AbstractPlugin = element.data.instance as AbstractPlugin;
+                    if(!plugin)
+                        continue;
+                    
+                    plugin.options = options;
 
                     generateCode(element);
                 }
@@ -265,8 +294,11 @@
             if(tablesList.length == 0)
                 tablesList = null;
 
-            var options:Object = {"tables":tablesList};
-            plugin.options = options;
+            if(!plugin.options)
+                plugin.options = {};
+            
+            plugin.options.tables = tablesList;
+            
             plugin.initialize();
 
             var generatedFiles:Array = plugin.generate();

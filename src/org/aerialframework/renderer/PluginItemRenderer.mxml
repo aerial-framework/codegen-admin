@@ -5,6 +5,12 @@
                 autoDrawBackground="false" dataChange="dataChangeHandler(event)"
                 width="100%">
 
+    <s:states>
+        <s:State name="State1"/>
+        <s:State name="selectOptions" basedOn="State1"/>
+        <s:State name="showOptions" basedOn="selectOptions"/>
+    </s:states>
+
     <s:layout>
         <s:VerticalLayout paddingBottom="2" paddingLeft="2"
                           paddingTop="2" paddingRight="0" gap="0"/>
@@ -13,14 +19,32 @@
     <s:HGroup width="100%" chromeColor="#DDDDDD" verticalAlign="middle">
         <s:Label text="{pluginInstance.fileType}" fontSize="12" width="100%"
                 paddingTop="4" toolTip="{data['package']}"/>
-        <s:CheckBox id="generateCheck"/>
+
+        <s:Label buttonMode="true" textDecoration="underline" color="#000000"
+                 text.selectOptions="show options" text.showOptions="hide options"
+                 paddingTop="4" includeIn="selectOptions" click="displayOptions()"/>
+
+        <s:CheckBox id="generateCheck" change="changeState()"/>
     </s:HGroup>
+    
+    <s:Form id="optionsForm" width="100%" includeIn="showOptions">
+        <s:layout>
+            <s:FormLayout gap="-14"/>
+        </s:layout>
+    </s:Form>
 
     <fx:Script>
         <![CDATA[
+        import mx.core.UIComponent;
         import mx.events.FlexEvent;
 
         import org.aerialframework.abstract.AbstractPlugin;
+        import org.aerialframework.abstract.OptionDescriptor;
+
+        import spark.components.FormItem;
+        import spark.components.TextInput;
+        
+        private var _optionFields:Dictionary = new Dictionary();
 
         [Bindable]
         private var pluginInstance:AbstractPlugin;
@@ -39,6 +63,61 @@
         override public function get selected():Boolean
         {
             return generateCheck.selected;
+        }
+
+        private function changeState():void
+        {
+            if(this.currentState == "selectOptions" && optionsForm)
+                optionsForm.removeAllElements();
+
+            this.currentState = selected ? "selectOptions" : "State1";
+        }
+
+        private function displayOptions():void
+        {
+            if(this.currentState == "showOptions")
+            {
+                this.currentState = "selectOptions";
+                return;
+            }
+
+            this.currentState = "showOptions";
+
+            optionsForm.removeAllElements();
+            _optionFields = new Dictionary();
+            
+            var options:Array = pluginInstance.exposedOptions;
+
+            for each(var option:OptionDescriptor in options)
+            {
+                var item:FormItem = new FormItem();
+                item.label = option.name;
+                item.percentWidth = 100;
+
+                var field:UIComponent;
+                switch(option.inputType)
+                {
+                    case OptionDescriptor.CHECKBOX_FIELD:
+                        field = new CheckBox();
+                        break;
+                    case OptionDescriptor.TEXT_FIELD:
+                        field = new TextInput();
+                        field.percentWidth = 100;
+                        break;
+                }
+                
+                _optionFields[option] = field;
+
+                if(field)
+                    item.addElement(field);
+
+                optionsForm.addElement(item);
+            }
+        }
+
+        public function get optionFields():Dictionary
+        {
+            return _optionFields;
         }
         ]]>
     </fx:Script>
