@@ -63,28 +63,12 @@
 
         protected function getType(item:FieldDefinition, column:DataGridColumn):String
         {
-            if(!item.isRelation)
-                return item.type;
-            else
-            {
-                if(item.many)
-                    return "IList";
-                else
-                    return item.type;
-            }
+            return item.type;
         }
 
         protected function getElementType(item:FieldDefinition, column:DataGridColumn):String
         {
-            if(!item.isRelation)
-                return "";
-            else
-            {
-                if(item.many)
-                    return item.type;
-                else
-                    return "";
-            }
+            return item.relationType;
         }
 
         protected function getModelName(item:ModelDefinition, column:DataGridColumn):String
@@ -110,9 +94,9 @@
 				 alternatingItemColors.State1="[#EEEEEE, #FFFFFF]" focusColor.State1="#DADADA"
 				 rollOverColor.State1="#A9A9A9" selectionColor.State1="#D2D2D2">
 		<mx:columns.State1>
-			<mx:DataGridColumn dataField="name" headerText="Field" sortable="true"></mx:DataGridColumn>
-			<mx:DataGridColumn labelFunction="getType" headerText="Type" sortable="true"></mx:DataGridColumn>
-			<mx:DataGridColumn labelFunction="getElementType" headerText="Element Type" sortable="true"></mx:DataGridColumn>
+			<mx:DataGridColumn dataField="name" headerText="Field Name" sortable="true"></mx:DataGridColumn>
+			<mx:DataGridColumn labelFunction="getType" headerText="MySQL Type" sortable="true"></mx:DataGridColumn>
+			<mx:DataGridColumn labelFunction="getElementType" headerText="Relation Type" sortable="true"></mx:DataGridColumn>
 		</mx:columns.State1>
 		<mx:columns.multiple>
 			<mx:DataGridColumn labelFunction="getModelName" headerText="Model" sortable="true"></mx:DataGridColumn>

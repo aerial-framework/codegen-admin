@@ -6,8 +6,7 @@ package org.aerialframework.model
 		public var name:String;
 		public var type:String;
 		public var length:int;
-		public var isRelation:Boolean;
-		public var many:Boolean;
+		public var relationType:String;
 		
 		public function FieldDefinition()
 		{
