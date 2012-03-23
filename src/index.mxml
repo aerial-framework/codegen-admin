@@ -17,6 +17,7 @@
         import com.jacwright.nativemenu.Menus;
 
         import mx.core.ByteArrayAsset;
+        import mx.utils.ObjectUtil;
 
         import org.aerialframework.controller.ConfigController;
         import org.aerialframework.controller.FileIOController;
@@ -24,6 +25,7 @@
         import org.aerialframework.controller.PluginController;
         import org.aerialframework.controller.ProjectController;
         import org.aerialframework.error.ConfigError;
+        import org.aerialframework.php.Service;
         import org.as3commons.lang.ClassUtils;
         import org.osflash.eval.getDefinition;
 
@@ -66,13 +68,9 @@
             var data:String = FileIOController.read(file, false, String);
             processConfig(new XML(data));
 
-//            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/rsajobs/db/rsajobs.mwb");
-//            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/zagweb/chateau/db/chateau.mwb");
-//            var mwb:File = new File("/Users/dannykopping/Downloads/sakila-db/sakila-db/sakila.mwb");
             mwb = new File();
             mwb.addEventListener(Event.SELECT, mwbSelectionHandler);
             mwb.browseForOpen("Browse for a MySQL Workbench file", [new FileFilter("MySQL Workbench File", "*.mwb")]);
-
         }
 
         private function mwbSelectionHandler(event:Event):void
