@@ -46,7 +46,7 @@
                 </s:VGroup>
             </s:Scroller>
 
-            <s:Button width="100%" label="Generate!" click="findSelectedPlugins()" height="30"
+            <s:Button width="100%" label="Generate!" click="generate()" height="30"
                       chromeColor="#0e7ed1"/>
 
         </s:Panel>
@@ -62,6 +62,7 @@
         import com.mysql.workbench.model.Table;
 
         import mx.collections.ArrayList;
+        import mx.controls.Alert;
         import mx.core.UIComponent;
         import mx.events.FlexEvent;
         import mx.utils.ObjectUtil;
@@ -81,6 +82,8 @@
         import spark.events.IndexChangeEvent;
 
         private var _schema:Schema;
+        
+        private var destinationDir:File;
 
         private function initializeHandler(event:FlexEvent):void
         {
@@ -155,15 +158,6 @@
             return ret;
         }
 
-        private function generate():void
-        {
-            var tables:Array = [];
-            for each(var modelDef:ModelDefinition in this.modelsList.selectedItems)
-                tables.push(modelDef.tableName);
-
-//            ProjectController.instance.generate("php-doctrine", this.schema, tables);
-        }
-
         public function set schema(schema:Schema):void
         {
             _schema = schema;
@@ -200,8 +194,8 @@
                     var oneRelation:FieldDefinition = new FieldDefinition();
                     oneRelation.name = fk.columnClassName;
                     oneRelation.relationType = fk.columnClassName != fk.referencedTable.className
-                                                ? fk.columnClassName
-                                                : fk.referencedTable.className;
+                            ? fk.referencedTable.className
+                            : fk.columnClassName;
 
                     model.fields.push(oneRelation);
                 }
@@ -218,7 +212,7 @@
                         aliases["_" + alias]++;
 
                     var manyRelation:FieldDefinition = new FieldDefinition();
-                    manyRelation.name = aliases["_" + alias] > 1 ? aliases["_" + alias] : alias;
+                    manyRelation.name = alias + (aliases["_" + alias] > 1 ? aliases["_" + alias] : "");
                     manyRelation.relationType = dk.referencedTable.className;
 
                     model.fields.push(manyRelation);
@@ -232,9 +226,30 @@
             this.modelsList.dataProvider = new ArrayList(models);
         }
 
-        private function findSelectedPlugins():void
+        private function generate():void
         {
+            if(!destinationDir)
+            {
+                destinationDir = new File();
+                destinationDir.addEventListener(Event.SELECT, findSelectedPlugins);
+                destinationDir.browseForDirectory("Select a destination directory");
+            }
+            else
+                findSelectedPlugins();
+        }
+
+        private function findSelectedPlugins(event:Event=null):void
+        {
+            if(!destinationDir)
+            {
+                generate();
+                return;
+            }
+
+            var startTime:int = getTimer();
+
             var dg:DataGroup = pluginsList.dataGroup;
+            var fileCount:int = 0;
 
             for(var i:int = 0; i < dg.numElements; i++)
             {
@@ -244,7 +259,7 @@
                 {
                     if(!element.selected)
                         continue;
-                    
+
                     if(element.optionFields)
                     {
                         var options:Object = {};
@@ -255,7 +270,7 @@
 
                             var optionDescriptor:OptionDescriptor = optionField as OptionDescriptor;
                             var field:UIComponent = element.optionFields[optionDescriptor];
-                            
+
                             if(optionDescriptor.propertyCallback)
                             {
                                 options[optionDescriptor.fieldName] = optionDescriptor.propertyCallback.apply(this, [field]);
@@ -266,26 +281,28 @@
                             }
                         }
                     }
-                    
+
                     var plugin:AbstractPlugin = element.data.instance as AbstractPlugin;
                     if(!plugin)
                         continue;
-                    
+
                     plugin.options = options;
 
-                    generateCode(element);
+                    fileCount += generateCode(element);
                 }
             }
+
+            Alert.show("Generated " + fileCount + " files in " + (getTimer() - startTime) + "ms", "Code Generation complete!");
         }
 
-        private function generateCode(element:PluginItemRenderer):void
+        private function generateCode(element:PluginItemRenderer):int
         {
             if(!element.data || !element.data.hasOwnProperty("instance"))
-                return;
+                return 0;
 
             var plugin:AbstractPlugin = element.data.instance as AbstractPlugin;
             if(!plugin)
-                return;
+                return 0;
 
             var tablesList:Array = [];
             for each(var modelDef:ModelDefinition in this.modelsList.selectedItems)
@@ -296,14 +313,16 @@
 
             if(!plugin.options)
                 plugin.options = {};
-            
+
             plugin.options.tables = tablesList;
-            
+
             plugin.initialize();
 
             var generatedFiles:Array = plugin.generate();
             if(!generatedFiles)
-                return;
+                return 0;
+
+            var generatedFileCount:int = 0;
 
             for each(var generated:GeneratedFile in generatedFiles)
             {
@@ -311,24 +330,27 @@
                 switch(plugin.language)
                 {
                     case "ActionScript 3.0":
-                        type = "src_flex";
+                        type = "src_flex" + File.separator;
                         break;
                     case "PHP":
-                        type = "src_php";
+                        type = "src_php" + File.separator;
+                        break;
+                    case "YAML":
+                        type = "";
                         break;
                 }
 
                 var directory:String = generated.packageString.replace(/\./g, File.separator) + File.separator + generated.fileName;
-                var file:File = File.desktopDirectory.resolvePath("aerial-codegen" + File.separator + type + File.separator + directory);
+                if(directory.charAt(0) == "/" || directory.charAt(0) == "\\")
+                    directory = directory.substr(1);
 
-                FileIOController.write(file, generated.content, true);
+                var file:File = destinationDir.resolvePath(type + directory);
 
-//                trace(StringUtils.repeat(50, "-"));
-//                trace("Filename: " + generated.fileName);
-//                trace("Package: " + generated.packageString);
-//                trace("Type: " + generated.type);
-//                trace("Content: " + generated.content);
+                if(FileIOController.write(file, generated.content, true))
+                    generatedFileCount++;
             }
+
+            return generatedFileCount;
         }
 
         private function getAS3Type(type:String, unsigned:Boolean = false):String

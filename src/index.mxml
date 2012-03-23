@@ -32,8 +32,7 @@
         private var menuController:MenuController = MenuController.instance;
         private var projectController:ProjectController = ProjectController.instance;
 
-        [Embed(source='test.mwb', mimeType='application/octet-stream')]
-        private var testMWB:Class;
+        private var mwb:File;
 
         /**
          * Application is invoked by command line or desktop by selecting a .aerial file
@@ -68,7 +67,19 @@
             processConfig(new XML(data));
 
 //            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/rsajobs/db/rsajobs.mwb");
-            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/zagweb/chateau/db/chateau.mwb");
+//            var mwb:File = new File("/Applications/XAMPP/xamppfiles/htdocs/dkc/zagweb/chateau/db/chateau.mwb");
+//            var mwb:File = new File("/Users/dannykopping/Downloads/sakila-db/sakila-db/sakila.mwb");
+            mwb = new File();
+            mwb.addEventListener(Event.SELECT, mwbSelectionHandler);
+            mwb.browseForOpen("Browse for a MySQL Workbench file", [new FileFilter("MySQL Workbench File", "*.mwb")]);
+
+        }
+
+        private function mwbSelectionHandler(event:Event):void
+        {
+            if(!mwb)
+                return;
+
             var schema:Schema = ConfigController.instance.processMWB(mwb);
 
             if(!schema)
@@ -92,7 +103,8 @@
 
             for each(var plugin:Object in plugins)
             {
-                trace("Loaded " + ClassUtils.getName(ClassUtils.forInstance(plugin.plugin, plugin.domain)) + " from package: " + plugin["package"]);
+                trace("Loaded " + ClassUtils.getName(ClassUtils.forInstance(plugin.instance, plugin.domain)) + " from package: " + plugin["package"]);
+                trace(plugin.instance.language + " > " + plugin.instance.fileType);
             }
         }
 
@@ -115,59 +127,6 @@
                         break;
                 }
             }
-        }
-
-        protected function testCodeGen():void
-        {
-            var doc:Document = new Document();
-            doc.loadByteArray(ByteArrayAsset(new testMWB()));
-            var schema:Schema = doc.schemas[0] as Schema;
-            //trace(schema.yaml);
-            //return;
-
-            const definition:Class = getDefinition("CodeGen");
-
-            var doctrine:* = new definition(schema);
-            doctrine.modelPackage = "com.test.vo";
-            doctrine.servicePackage = "com.test.services";
-            doctrine.generateModels(['User']);
-        }
-
-        private function loadContents():String
-        {
-            var contents:String;
-
-            const fileStream:FileStream = new FileStream();
-            try
-            {
-                const file:File = File.applicationDirectory.resolvePath('CodeGen.as.tmpl');
-                fileStream.open(file, FileMode.READ);
-                contents = fileStream.readMultiByte(file.size, File.systemCharset);
-            }
-            catch (error:Error)
-            {
-                contents = null;
-            }
-            finally
-            {
-                fileStream.close();
-            }
-
-            return contents;
-        }
-
-        private function handleSuccess():void
-        {
-//				const definition : Class = getDefinition('Bob');
-//
-//				new definition("Bob\nlikes\nto\nwalk");
-
-            testCodeGen();
-        }
-
-        private function handleFailure(e:*):void
-        {
-            trace(e);
         }
         ]]>
 	</fx:Script>
