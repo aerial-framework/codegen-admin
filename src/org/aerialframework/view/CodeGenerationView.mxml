@@ -92,11 +92,11 @@
 
         private function pluginsLoadHandler(plugins:Array):void
         {
+            pluginsList.dataProvider = new ArrayList();
+            pluginsList.validateNow();
+
             if(!plugins)
-            {
-                pluginsList.dataProvider = new ArrayList();
                 return;
-            }
 
             var groupList:ArrayList = new ArrayList();
             var groups:OrderedObject = new OrderedObject();
@@ -277,7 +277,8 @@
                             }
                             else
                             {
-                                options[optionDescriptor.fieldName] = field[optionDescriptor.property];
+                                if(field[optionDescriptor.property] !== "")
+                                    options[optionDescriptor.fieldName] = field[optionDescriptor.property];
                             }
                         }
                     }
