@@ -1,9 +1,6 @@
-[submodule "plugins"]
-	path = plugins
-	url = git@github.com:aerial-framework/codegen-plugins.git
 [submodule "deps/Awesome-AS3-MWB-Processor"]
 	path = deps/Awesome-AS3-MWB-Processor
 	url = git@github.com:aerial-framework/Awesome-AS3-MWB-Processor.git
-[submodule "as3commons-collections"]
-	path = as3commons-collections
-	url = https://github.com/AS3Commons/as3commons-collections.git
+[submodule "plugins"]
+	path = plugins
+	url = git@github.com:aerial-framework/codegen-plugins.git
