@@ -87,6 +87,12 @@
 
             PluginController.instance.schema = schema;
             PluginController.instance.relations = relations;
+
+            loadPlugins();
+        }
+
+        private function loadPlugins():void
+        {
             PluginController.instance.registerPlugins();
             PluginController.instance.pluginsLoaded.add(pluginsLoadedHandler);
         }
@@ -97,12 +103,6 @@
             {
                 trace("No plugins loaded");
                 return;
-            }
-
-            for each(var plugin:Object in plugins)
-            {
-                trace("Loaded " + ClassUtils.getName(ClassUtils.forInstance(plugin.instance, plugin.domain)) + " from package: " + plugin["package"]);
-                trace(plugin.instance.language + " > " + plugin.instance.fileType);
             }
         }
 
@@ -146,6 +146,10 @@
                 <nativemenu:MenuItem label="E_xit" shortcut="Alt+F4" select="menuController.closeApplication()"
                                      os="win"/>
             </nativemenu:MenuItem>
+            <!--<nativemenu:MenuItem label="_Options">
+                <nativemenu:MenuItem label="_Reload Plugins" shortcut="Cmd+Shift+R"
+                                     select="loadPlugins()"/>
+            </nativemenu:MenuItem>-->
         </nativemenu:Menu>
     </fx:Declarations>
 

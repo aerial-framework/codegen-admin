@@ -85,6 +85,8 @@ package org.aerialframework.controller
 		public function registerPlugins():void
 		{
 			_loadedPlugins = [];
+			domains = {};
+			plugins = [];
 			evalIndex = 0;
 
 			var pluginDir:File = File.applicationDirectory.resolvePath("plugins/src");
